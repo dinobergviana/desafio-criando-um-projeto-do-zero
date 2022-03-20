@@ -38,11 +38,11 @@ const Preview = async (req, res) => {
     .resolve(linkResolver, '/');
 
   if (!redirectUrl) {
-    return res.status(481).json({ message: 'Invalid token' });
+    return res.status(401).json({ message: 'Invalid token' });
   }
 
   res.setPreviewData({ ref });
-  res.writeHead(382, { Location: `${redirectUrl}` });
+  res.writeHead(302, { Location: `${redirectUrl}` });
   res.end();
 };
 
