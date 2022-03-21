@@ -37,10 +37,28 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  navigation: {
+    prevPost: {
+      uid: string;
+      data: {
+        title: string;
+      };
+    }[];
+    nextPost: {
+      uid: string;
+      data: {
+        title: string;
+      };
+    }[];
+  };
   preview: boolean;
 }
 
-export default function Post({ post, preview }: PostProps): JSX.Element {
+export default function Post({
+  post,
+  navigation,
+  preview,
+}: PostProps): JSX.Element {
   const totalWords = post.data.content.reduce((total, contentItem) => {
     total += contentItem.heading.split(' ').length;
     const words = contentItem.body.map(item => item.text.split(' ').length);
@@ -104,6 +122,26 @@ export default function Post({ post, preview }: PostProps): JSX.Element {
           })}
         </div>
 
+        <section className={`${styles.navigation} ${commonStyles.container}`}>
+          {navigation?.prevPost.length > 0 && (
+            <div>
+              <h3>{navigation.prevPost[0].data.title}</h3>
+              <Link href={`/post/${navigation.prevPost[0].uid}`}>
+                <a>Post anterior</a>
+              </Link>
+            </div>
+          )}
+
+          {navigation?.nextPost.length > 0 && (
+            <div>
+              <h3>{navigation.nextPost[0].data.title}</h3>
+              <Link href={`/post/${navigation.nextPost[0].uid}`}>
+                <a>Próximo post</a>
+              </Link>
+            </div>
+          )}
+        </section>
+
         <Comments />
 
         {preview && (
@@ -149,6 +187,24 @@ export const getStaticProps: GetStaticProps = async ({
     ref: previewData?.ref || null,
   });
 
+  const prevPost = await prismic.query(
+    [Prismic.predicates.at('document.type', 'posts')],
+    {
+      pageSize: 1,
+      after: response.id,
+      orderings: '[document.first_publication_date]',
+    }
+  );
+
+  const nextPost = await prismic.query(
+    [Prismic.predicates.at('document.type', 'posts')],
+    {
+      pageSize: 1,
+      after: response.id,
+      orderings: '[document.last_publication_date desc]',
+    }
+  );
+
   const post = {
     uid: response.uid,
     first_publication_date: response.first_publication_date,
@@ -171,6 +227,10 @@ export const getStaticProps: GetStaticProps = async ({
   return {
     props: {
       post,
+      navigation: {
+        prevPost: prevPost?.results,
+        nextPost: nextPost?.results,
+      },
       preview,
     },
   };
